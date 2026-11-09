@@ -1,0 +1,354 @@
+{
+ "info": {
+  "name": "Bintang Service API",
+  "description": "Backend API pemesanan servis motor Bintang Service (Laravel + Sanctum).\n\nCara pakai: import collection & environment, pilih environment 'Bintang Service - Local', jalankan `php artisan migrate:fresh --seed`, lalu Run collection dari atas ke bawah.\nAkun seeder: admin@bintangservice.test / rahmat@example.com (password: password123).",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+ },
+ "item": [
+  {
+   "name": "1. Auth",
+   "item": [
+    {
+     "name": "Register Pelanggan Baru",
+     "request": {
+      "method": "POST",
+      "header": [{"key": "Content-Type", "value": "application/json"}],
+      "url": "{{base_url}}/register",
+      "body": {"mode": "raw", "raw": "{\"name\": \"Pelanggan Uji\", \"email\": \"pelanggan{{$timestamp}}@example.com\", \"phone\": \"081234567890\", \"password\": \"password123\", \"password_confirmation\": \"password123\"}", "options": {"raw": {"language": "json"}}},
+      "auth": {"type": "noauth"}
+     },
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"[T01] Register 201\", () => pm.response.to.have.status(201));",
+      "pm.test(\"Format {status, message, data}\", () => { const j = pm.response.json(); pm.expect(j).to.include.keys(\"status\",\"message\",\"data\"); });",
+      "pm.test(\"Tidak ada password/remember_token\", () => { const t = pm.response.text(); pm.expect(t).to.not.include(\"\\\"password\\\"\"); pm.expect(t).to.not.include(\"remember_token\"); });",
+      "pm.test(\"Response berisi token\", () => pm.expect(pm.response.json().data.token).to.be.a(\"string\").and.not.empty);"
+     ]}}]
+    },
+    {
+     "name": "Login Pelanggan",
+     "request": {
+      "method": "POST",
+      "header": [{"key": "Content-Type", "value": "application/json"}],
+      "url": "{{base_url}}/login",
+      "body": {"mode": "raw", "raw": "{\"email\": \"rahmat@example.com\", \"password\": \"password123\"}", "options": {"raw": {"language": "json"}}},
+      "auth": {"type": "noauth"}
+     },
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"[T02] Login 200\", () => pm.response.to.have.status(200));",
+      "pm.test(\"Format {status, message, data}\", () => { const j = pm.response.json(); pm.expect(j).to.include.keys(\"status\",\"message\",\"data\"); });",
+      "pm.test(\"Tidak ada password/remember_token\", () => { const t = pm.response.text(); pm.expect(t).to.not.include(\"\\\"password\\\"\"); pm.expect(t).to.not.include(\"remember_token\"); });",
+      "const tk = pm.response.json().data.token;",
+      "pm.test(\"Response berisi token\", () => pm.expect(tk).to.be.a(\"string\").and.not.empty);",
+      "pm.environment.set(\"token\", tk);"
+     ]}}]
+    },
+    {
+     "name": "Login Admin",
+     "request": {
+      "method": "POST",
+      "header": [{"key": "Content-Type", "value": "application/json"}],
+      "url": "{{base_url}}/login",
+      "body": {"mode": "raw", "raw": "{\"email\": \"admin@bintangservice.test\", \"password\": \"password123\"}", "options": {"raw": {"language": "json"}}},
+      "auth": {"type": "noauth"}
+     },
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+      "pm.environment.set(\"admin_token\", pm.response.json().data.token);"
+     ]}}]
+    },
+    {
+     "name": "Login Password Salah",
+     "request": {
+      "method": "POST",
+      "header": [{"key": "Content-Type", "value": "application/json"}],
+      "url": "{{base_url}}/login",
+      "body": {"mode": "raw", "raw": "{\"email\": \"rahmat@example.com\", \"password\": \"salah123\"}", "options": {"raw": {"language": "json"}}},
+      "auth": {"type": "noauth"}
+     },
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"Status 401\", () => pm.response.to.have.status(401));",
+      "pm.test(\"Format {status, message, data}\", () => { const j = pm.response.json(); pm.expect(j).to.include.keys(\"status\",\"message\",\"data\"); });"
+     ]}}]
+    },
+    {
+     "name": "Profil Saya (me)",
+     "request": {
+      "method": "GET",
+      "url": "{{base_url}}/me",
+      "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]}
+     },
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"[T03] Protected endpoint dengan token 200\", () => pm.response.to.have.status(200));",
+      "pm.test(\"Format {status, message, data}\", () => { const j = pm.response.json(); pm.expect(j).to.include.keys(\"status\",\"message\",\"data\"); });",
+      "pm.test(\"Tidak ada password/remember_token\", () => { const t = pm.response.text(); pm.expect(t).to.not.include(\"\\\"password\\\"\"); pm.expect(t).to.not.include(\"remember_token\"); });"
+     ]}}]
+    },
+    {
+     "name": "Ubah Profil",
+     "request": {
+      "method": "PUT",
+      "header": [{"key": "Content-Type", "value": "application/json"}],
+      "url": "{{base_url}}/profile",
+      "body": {"mode": "raw", "raw": "{\"phone\": \"081299988877\"}", "options": {"raw": {"language": "json"}}},
+      "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]}
+     },
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+      "pm.test(\"Format {status, message, data}\", () => { const j = pm.response.json(); pm.expect(j).to.include.keys(\"status\",\"message\",\"data\"); });"
+     ]}}]
+    }
+   ]
+  },
+  {
+   "name": "2. Services (publik)",
+   "auth": {"type": "noauth"},
+   "item": [
+    {
+     "name": "Daftar Layanan (pagination)",
+     "request": {"method": "GET", "url": "{{base_url}}/services?per_page=5&page=1", "auth": {"type": "noauth"}},
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"[T08] List layanan 200\", () => pm.response.to.have.status(200));",
+      "pm.test(\"Format {status, message, data}\", () => { const j = pm.response.json(); pm.expect(j).to.include.keys(\"status\",\"message\",\"data\"); });",
+      "pm.test(\"Ada meta pagination\", () => pm.expect(pm.response.json().meta).to.include.keys(\"current_page\",\"per_page\",\"total\",\"last_page\"));"
+     ]}}]
+    },
+    {
+     "name": "Cari Layanan",
+     "request": {"method": "GET", "url": "{{base_url}}/services?search=oli", "auth": {"type": "noauth"}},
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+      "pm.test(\"Ada meta pagination\", () => pm.expect(pm.response.json().meta).to.include.keys(\"current_page\",\"per_page\",\"total\",\"last_page\"));"
+     ]}}]
+    },
+    {
+     "name": "Detail Layanan",
+     "request": {"method": "GET", "url": "{{base_url}}/services/1", "auth": {"type": "noauth"}},
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+      "pm.test(\"Format {status, message, data}\", () => { const j = pm.response.json(); pm.expect(j).to.include.keys(\"status\",\"message\",\"data\"); });"
+     ]}}]
+    },
+    {
+     "name": "Detail Layanan Tidak Ada (404)",
+     "request": {"method": "GET", "url": "{{base_url}}/services/999", "auth": {"type": "noauth"}},
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"[T07] Resource tidak ditemukan 404\", () => pm.response.to.have.status(404));",
+      "pm.test(\"Format {status, message, data}\", () => { const j = pm.response.json(); pm.expect(j).to.include.keys(\"status\",\"message\",\"data\"); });"
+     ]}}]
+    }
+   ]
+  },
+  {
+   "name": "3. Bookings (pelanggan)",
+   "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+   "item": [
+    {
+     "name": "Buat Booking Valid",
+     "request": {
+      "method": "POST",
+      "header": [{"key": "Content-Type", "value": "application/json"}],
+      "url": "{{base_url}}/bookings",
+      "body": {"mode": "raw", "raw": "{\"motor_type\": \"Honda Beat 2021\", \"plate_number\": \"BL 1234 AB\", \"booking_date\": \"{{booking_date}}\", \"booking_time\": \"09:30\", \"complaint\": \"Mesin kasar saat dingin.\", \"service_ids\": [1, 2]}", "options": {"raw": {"language": "json"}}}
+     },
+     "event": [
+      {"listen": "prerequest", "script": {"type": "text/javascript", "exec": [
+       "const d = new Date(); d.setDate(d.getDate() + 3);",
+       "pm.environment.set(\"booking_date\", d.toISOString().slice(0, 10));"
+      ]}},
+      {"listen": "test", "script": {"type": "text/javascript", "exec": [
+       "pm.test(\"[T04] POST data valid 201\", () => pm.response.to.have.status(201));",
+       "pm.test(\"Format {status, message, data}\", () => { const j = pm.response.json(); pm.expect(j).to.include.keys(\"status\",\"message\",\"data\"); });",
+       "const b = pm.response.json().data;",
+       "pm.test(\"Total harga = jumlah harga layanan\", () => pm.expect(b.total_price).to.eql(b.details.reduce((s, d) => s + d.price, 0)));",
+       "pm.environment.set(\"booking_id\", b.id);"
+      ]}}
+     ]
+    },
+    {
+     "name": "Buat Booking Tidak Valid (422)",
+     "request": {
+      "method": "POST",
+      "header": [{"key": "Content-Type", "value": "application/json"}],
+      "url": "{{base_url}}/bookings",
+      "body": {"mode": "raw", "raw": "{\"motor_type\": \"\", \"plate_number\": \"BL 1234 AB\", \"booking_date\": \"2020-01-01\", \"booking_time\": \"25:99\", \"service_ids\": []}", "options": {"raw": {"language": "json"}}}
+     },
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"[T05] Data invalid 422\", () => pm.response.to.have.status(422));",
+      "pm.test(\"Ada detail errors per field\", () => pm.expect(pm.response.json().errors).to.include.keys(\"motor_type\",\"booking_date\",\"booking_time\",\"service_ids\"));"
+     ]}}]
+    },
+    {
+     "name": "Riwayat Booking Saya",
+     "request": {"method": "GET", "url": "{{base_url}}/bookings?per_page=5"},
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+      "pm.test(\"Format {status, message, data}\", () => { const j = pm.response.json(); pm.expect(j).to.include.keys(\"status\",\"message\",\"data\"); });",
+      "pm.test(\"Ada meta pagination\", () => pm.expect(pm.response.json().meta).to.include.keys(\"current_page\",\"per_page\",\"total\",\"last_page\"));"
+     ]}}]
+    },
+    {
+     "name": "Detail Booking",
+     "request": {"method": "GET", "url": "{{base_url}}/bookings/{{booking_id}}"},
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+      "pm.test(\"Format {status, message, data}\", () => { const j = pm.response.json(); pm.expect(j).to.include.keys(\"status\",\"message\",\"data\"); });"
+     ]}}]
+    },
+    {
+     "name": "Rincian Layanan Booking",
+     "request": {"method": "GET", "url": "{{base_url}}/bookings/{{booking_id}}/details"},
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+      "pm.test(\"Format {status, message, data}\", () => { const j = pm.response.json(); pm.expect(j).to.include.keys(\"status\",\"message\",\"data\"); });"
+     ]}}]
+    },
+    {
+     "name": "Ubah Jadwal Booking",
+     "request": {
+      "method": "PUT",
+      "header": [{"key": "Content-Type", "value": "application/json"}],
+      "url": "{{base_url}}/bookings/{{booking_id}}",
+      "body": {"mode": "raw", "raw": "{\"booking_time\": \"14:00\"}", "options": {"raw": {"language": "json"}}}
+     },
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+      "pm.test(\"Format {status, message, data}\", () => { const j = pm.response.json(); pm.expect(j).to.include.keys(\"status\",\"message\",\"data\"); });"
+     ]}}]
+    },
+    {
+     "name": "Batalkan Booking",
+     "request": {"method": "PATCH", "url": "{{base_url}}/bookings/{{booking_id}}/cancel"},
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+      "pm.test(\"Status cancelled\", () => pm.expect(pm.response.json().data.status).to.eql(\"cancelled\"));"
+     ]}}]
+    },
+    {
+     "name": "Riwayat Booking Tanpa Token (401)",
+     "request": {"method": "GET", "url": "{{base_url}}/bookings", "auth": {"type": "noauth"}},
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"[T06] Request protected tanpa token 401\", () => pm.response.to.have.status(401));",
+      "pm.test(\"Format {status, message, data}\", () => { const j = pm.response.json(); pm.expect(j).to.include.keys(\"status\",\"message\",\"data\"); });"
+     ]}}]
+    }
+   ]
+  },
+  {
+   "name": "4. Admin",
+   "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{admin_token}}", "type": "string"}]},
+   "item": [
+    {
+     "name": "Tambah Layanan",
+     "request": {
+      "method": "POST",
+      "header": [{"key": "Content-Type", "value": "application/json"}],
+      "url": "{{base_url}}/services",
+      "body": {"mode": "raw", "raw": "{\"name\": \"Ganti Busi\", \"description\": \"Penggantian busi standar.\", \"price\": 35000, \"duration_minutes\": 15}", "options": {"raw": {"language": "json"}}}
+     },
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+      "pm.test(\"Format {status, message, data}\", () => { const j = pm.response.json(); pm.expect(j).to.include.keys(\"status\",\"message\",\"data\"); });",
+      "pm.environment.set(\"service_id\", pm.response.json().data.id);"
+     ]}}]
+    },
+    {
+     "name": "Ubah Layanan",
+     "request": {
+      "method": "PUT",
+      "header": [{"key": "Content-Type", "value": "application/json"}],
+      "url": "{{base_url}}/services/{{service_id}}",
+      "body": {"mode": "raw", "raw": "{\"price\": 40000}", "options": {"raw": {"language": "json"}}}
+     },
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+      "pm.test(\"Format {status, message, data}\", () => { const j = pm.response.json(); pm.expect(j).to.include.keys(\"status\",\"message\",\"data\"); });"
+     ]}}]
+    },
+    {
+     "name": "Hapus Layanan",
+     "request": {"method": "DELETE", "url": "{{base_url}}/services/{{service_id}}"},
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+      "pm.test(\"Format {status, message, data}\", () => { const j = pm.response.json(); pm.expect(j).to.include.keys(\"status\",\"message\",\"data\"); });"
+     ]}}]
+    },
+    {
+     "name": "Ubah Status Booking",
+     "request": {
+      "method": "PATCH",
+      "header": [{"key": "Content-Type", "value": "application/json"}],
+      "url": "{{base_url}}/bookings/4/status",
+      "body": {"mode": "raw", "raw": "{\"status\": \"confirmed\"}", "options": {"raw": {"language": "json"}}}
+     },
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"[T10] Admin ubah status booking 200\", () => pm.response.to.have.status(200));",
+      "pm.test(\"Status berubah\", () => pm.expect(pm.response.json().data.status).to.eql(\"confirmed\"));"
+     ]}}]
+    },
+    {
+     "name": "Daftar Pelanggan",
+     "request": {"method": "GET", "url": "{{base_url}}/admin/customers"},
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+      "pm.test(\"Ada meta pagination\", () => pm.expect(pm.response.json().meta).to.include.keys(\"current_page\",\"per_page\",\"total\",\"last_page\"));",
+      "pm.test(\"Tidak ada password/remember_token\", () => { const t = pm.response.text(); pm.expect(t).to.not.include(\"\\\"password\\\"\"); pm.expect(t).to.not.include(\"remember_token\"); });"
+     ]}}]
+    },
+    {
+     "name": "Detail Pelanggan",
+     "request": {"method": "GET", "url": "{{base_url}}/admin/customers/2"},
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+      "pm.test(\"Format {status, message, data}\", () => { const j = pm.response.json(); pm.expect(j).to.include.keys(\"status\",\"message\",\"data\"); });",
+      "pm.test(\"Tidak ada password/remember_token\", () => { const t = pm.response.text(); pm.expect(t).to.not.include(\"\\\"password\\\"\"); pm.expect(t).to.not.include(\"remember_token\"); });"
+     ]}}]
+    },
+    {
+     "name": "Booking Milik Pelanggan",
+     "request": {"method": "GET", "url": "{{base_url}}/admin/customers/2/bookings"},
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+      "pm.test(\"Ada meta pagination\", () => pm.expect(pm.response.json().meta).to.include.keys(\"current_page\",\"per_page\",\"total\",\"last_page\"));"
+     ]}}]
+    },
+    {
+     "name": "Ringkasan Bengkel",
+     "request": {"method": "GET", "url": "{{base_url}}/admin/summary"},
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+      "pm.test(\"Format {status, message, data}\", () => { const j = pm.response.json(); pm.expect(j).to.include.keys(\"status\",\"message\",\"data\"); });"
+     ]}}]
+    },
+    {
+     "name": "Pelanggan Akses Endpoint Admin (403)",
+     "request": {"method": "GET", "url": "{{base_url}}/admin/summary", "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]}},
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"[T09] Pelanggan ditolak di endpoint admin 403\", () => pm.response.to.have.status(403));",
+      "pm.test(\"Format {status, message, data}\", () => { const j = pm.response.json(); pm.expect(j).to.include.keys(\"status\",\"message\",\"data\"); });"
+     ]}}]
+    }
+   ]
+  },
+  {
+   "name": "5. Logout",
+   "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+   "item": [
+    {
+     "name": "Logout",
+     "request": {"method": "POST", "url": "{{base_url}}/logout"},
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+      "pm.test(\"Format {status, message, data}\", () => { const j = pm.response.json(); pm.expect(j).to.include.keys(\"status\",\"message\",\"data\"); });"
+     ]}}]
+    },
+    {
+     "name": "Akses Setelah Logout (401)",
+     "request": {"method": "GET", "url": "{{base_url}}/me"},
+     "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+      "pm.test(\"Status 401\", () => pm.response.to.have.status(401));"
+     ]}}]
+    }
+   ]
+  }
+ ]
+}
