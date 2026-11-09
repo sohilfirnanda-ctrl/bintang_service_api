@@ -66,15 +66,20 @@ Seluruh 21 endpoint terpanggil minimal satu kali dalam collection.
 
 ## Screenshot
 
-### 1. Auth & Services (T01, T02, T03, T07, T08)
-![Auth dan Services](screenshots/newman-1-auth-services.png)
+### 1. Auth & Services (T01, T02, T03, T08)
+![Auth dan Services](screenshots/newman-1.png)
 
-### 2. Bookings (T04, T05, T06)
-![Bookings](screenshots/newman-2-bookings.png)
+### 2. Services & Bookings (T07, T04, T05)
+![Services dan Bookings](screenshots/newman-2.png)
 
-### 3. Admin, Logout & Ringkasan (T09, T10)
-![Admin dan ringkasan](screenshots/newman-3-admin-summary.png)
+### 3. Bookings & Admin (T06)
+![Bookings dan Admin](screenshots/newman-3.png)
 
+### 4. Admin & Logout (T09, T10)
+![Admin dan Logout](screenshots/newman-4.png)
+
+### 5. Ringkasan Hasil (0 failed)
+![Ringkasan](screenshots/newman-5.png)
 ## Kesimpulan
 
 Seluruh skenario wajib (201, 200, 401, 404, 422) beserta skenario tambahan (403, pagination, dan pemeriksaan data sensitif) lulus pengujian. Total 66 assertion pada 29 request berjalan tanpa kegagalan.
